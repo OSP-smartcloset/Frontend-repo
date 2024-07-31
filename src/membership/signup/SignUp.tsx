@@ -1,11 +1,14 @@
 import React from 'react';
-import {useNavigate} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
+import {FaArrowLeft} from "react-icons/fa6";
 
 function SignUp(props: any) {
-    const [id, setId] = React.useState('');
+    const location = useLocation();
+    const user = location.state?.user || {};
+    const [id, setId] = React.useState(user.email || '');
     const [password, setPassword] = React.useState('');
     const [nickname, setNickname] = React.useState('');
-    const [gender, setGender] = React.useState('');
+    const [gender, setGender] = React.useState(user.gender || '');
     const [height, setHeight] = React.useState('');
     const [weight, setWeight] = React.useState('');
     const navigate = useNavigate();
@@ -14,12 +17,17 @@ function SignUp(props: any) {
         navigate('/');
     }
 
+    const handleBack = () => {
+        navigate('/');
+    }
+
     return (
         <div>
-            <h1 className="text-center text-3xl font-bold mt-40">회원가입</h1>
+            <FaArrowLeft onClick={handleBack} className="w-6 h-6 ml-2 mt-2"/>
+            <h1 className="text-center text-3xl font-bold mt-32">회원가입</h1>
             <div className="flex flex-col items-center mt-20">
                 <div className="w-10/12 mb-3">
-                    <label htmlFor="id">ID</label>
+                    <label htmlFor="id">ID (Email)</label>
                     <div className="relative">
                         <input
                             id="id"
@@ -28,6 +36,7 @@ function SignUp(props: any) {
                             value={id}
                             className="border rounded-lg w-full p-2 pr-20"
                             onChange={(e) => setId(e.target.value)}
+                            readOnly={!!user.email}
                         />
                         <button
                             className="absolute border rounded-2xl border-blue-300 p-1 right-2 top-1/2 transform -translate-y-1/2 text-black text-sm">중복확인

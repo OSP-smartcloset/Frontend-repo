@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Footer from '../footer/Footer';
+import Footer from '../../footer/Footer';
 
 interface WeatherData {
     date: string;
@@ -10,7 +10,7 @@ interface WeatherData {
     description: string;
 }
 
-const Home: React.FC = () => {
+const HomePage: React.FC = () => {
     const [weeklyWeather, setWeeklyWeather] = useState<WeatherData[]>([]);
     const [message, setMessage] = useState('');
 
@@ -74,9 +74,12 @@ const Home: React.FC = () => {
 
     return (
         <div className="flex flex-col h-screen">
+            <h1 className="font-tenor text-xl ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
+                smartcloset
+            </h1>
             <h1 className="text-2xl font-bold text-center py-4 mt-6">주간 날씨</h1>
             <div className="flex justify-between bg-gray-300 text-black p-3 overflow-x-auto">
-                {weeklyWeather.length > 0 ? (
+            {weeklyWeather.length > 0 ? (
                     weeklyWeather.map((day, index) => (
                         <div key={index} className="flex flex-col items-center mx-2">
                             <span>{day.date}</span>
@@ -117,4 +120,4 @@ const Home: React.FC = () => {
     );
 };
 
-export default Home;
+export default HomePage;

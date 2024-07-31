@@ -7,12 +7,12 @@ import appleLogin from '../../image/apple_login.png'
 
 
 function Login(props: any) {
-    const [username, setUsername] = React.useState('');
+    const [id, setId] = React.useState('');
     const [password, setPassword] = React.useState('');
     const navigate = useNavigate();
 
     const handleSignUp = () => {
-        navigate('/signUp');
+        navigate('/signup');
     }
 
     const handleLogin = () => {
@@ -28,9 +28,9 @@ function Login(props: any) {
                     name="id"
                     type="text"
                     placeholder="아이디를 입력해 주세요."
-                    value={username}
-                    className="border rounded-lg w-10/12 p-2 mb-3"
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={id}
+                    className="border rounded-lg w-10/12 p-3 mb-4"
+                    onChange={(e) => setId(e.target.value)}
                 ></input>
                 <input
                     id="password"
@@ -38,7 +38,7 @@ function Login(props: any) {
                     type="password"
                     placeholder="비밀번호를 입력해 주세요."
                     value={password}
-                    className="border rounded-lg w-10/12 p-2"
+                    className="border rounded-lg w-10/12 p-3"
                     onChange={(e) => setPassword(e.target.value)}
                 ></input>
             </div>

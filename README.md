@@ -11,6 +11,7 @@ SW 개발자 공모전 대회
 
 #### 기술 스택
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=React&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-61DAFB?style=flat&logo=React&logoColor=white)
 ![HTML](https://img.shields.io/badge/HTML-E34F26?style=flat&logo=HTML5&logoColor=white)
 ![CSS](https://img.shields.io/badge/CSS-1572B6?style=flat&logo=CSS3&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-007396?style=flat&logo=Java&logoColor=white)

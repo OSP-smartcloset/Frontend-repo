@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { FaRegUserCircle } from 'react-icons/fa';
 import { MdDelete } from "react-icons/md";
+import { AiOutlineLike } from "react-icons/ai";
 
 interface Post {
     id: number;
     title: string;
     content: string;
+    likes: number;
 }
 
 interface Comment {
@@ -17,9 +19,10 @@ interface Comment {
 
 interface WriteDetailPageProps {
     posts: Post[];
+    updatePostLikes: (postId: number, likes: number) => void;
 }
 
-const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ posts }) => {
+const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ posts, updatePostLikes }) => {
     const { postId } = useParams<{ postId: string }>();
     const navigate = useNavigate();
 
@@ -32,7 +35,7 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ posts }) => {
     }
 
     const handleBack = () => {
-        navigate('/board'); // 게시글 목록 페이지로 이동
+        navigate('/board');
     };
 
     const handleAddComment = () => {
@@ -50,21 +53,34 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ posts }) => {
         setComments(comments.filter(comment => comment.id !== id));
     };
 
+    const handleLike = () => {
+        if (post) {
+            updatePostLikes(post.id, post.likes + 1);
+            setPost({ ...post, likes: post.likes + 1 });
+        }
+    };
+
     return (
         <div className="p-4">
             <div className="flex">
-                <FaArrowLeft onClick={handleBack} className="w-6 h-6 cursor-pointer"/>
+                <FaArrowLeft onClick={handleBack} className="w-6 h-6 cursor-pointer" />
                 <h1 className="m-auto font-bold text-xl">게시글 내용</h1>
             </div>
-            <hr className="w-full mt-2 mb-3"/>
+            <hr className="w-full mt-2 mb-3" />
             <div className="flex items-center w-full p-2 mt-3">
-                <FaRegUserCircle className="w-16 h-16 mr-4"/>
+                <FaRegUserCircle className="w-16 h-16 mr-4" />
                 <div className="flex flex-col">
                     <h2 className="text-2xl font-bold">{post.title}</h2>
                     <p>닉네임 | 8/1</p>
                 </div>
             </div>
             <p className="mt-2">{post.content}</p>
+            <button
+                onClick={handleLike}
+                className="flex items-center mt-4"
+            >
+                <AiOutlineLike className="mr-2" /> 좋아요 {post.likes}
+            </button>
             <div>
                 <h2 className="text-xl font-bold mb-2 mt-3">댓글</h2>
                 {comments.map(comment => (
@@ -80,7 +96,7 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ posts }) => {
                 ))}
             </div>
             <div className="mt-4">
-            <div className="mb-3 flex">
+                <div className="mb-3 flex">
                     <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}

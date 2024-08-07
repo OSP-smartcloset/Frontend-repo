@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {FaArrowLeft} from "react-icons/fa";
 
 interface WritePageProps {
-    addPost: (title: string, content: string) => void;
+    addPost: (title: string, content: string, date: string) => void;
 }
 
 const WritePage: React.FC<WritePageProps> = ({ addPost }) => {
@@ -12,8 +12,9 @@ const WritePage: React.FC<WritePageProps> = ({ addPost }) => {
     const navigate = useNavigate();
 
     const handlePostSubmit = () => {
+        const date = new Date().toISOString().split('T')[0];
         if (title && content) {
-            addPost(title, content);
+            addPost(title, content, date);
             navigate('/board');
         }
     };

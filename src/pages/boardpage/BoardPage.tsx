@@ -3,25 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import Footer from "../../footer/Footer";
 // @ts-ignore
 import search from '../../image/search.png';
+// @ts-ignore
+import hot from '../../image/hot.png'
 
 interface Post {
     id: number;
     title: string;
     content: string;
+    likes: number;
+    date: string;
 }
+
 interface BoardPageProps {
     posts: Post[];
 }
+
 const postsPerPage = 5;
 
 const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
-    const [filteredPosts, setFilteredPosts] = React.useState<Post[]>(posts);
-    const [currentPage, setCurrentPage] = React.useState(1);
-    const [currentPageBlock, setCurrentPageBlock] = React.useState(0);
-    const [searchTerm, setSearchTerm] = React.useState('');
+    const [filteredPosts, setFilteredPosts] = useState<Post[]>(posts);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPageBlock, setCurrentPageBlock] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
-    React.useEffect(() => {
+    useEffect(() => {
         setFilteredPosts(posts);
     }, [posts]);
 
@@ -74,18 +80,31 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
         return pageNumbers;
     };
 
+    const hotPosts = posts
+        .filter(post => post.likes > 0)
+        .sort((a, b) => b.likes - a.likes)
+        .slice(0, 2);
+
     return (
         <div>
             <h1 className="font-tenor text-xl ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
                 smartcloset
             </h1>
-            <div className="mt-4">
-                <h2 className="text-lg font-bold ml-4 mb-2">게시물</h2>
+            <div className="mt-14 bg-pink-200">
+                {hotPosts.map(post => (
+                    <div key={post.id} className="flex border-b p-2 cursor-pointer" onClick={() => navigate(`/post/${post.id}`)}>
+                        <img src={hot} alt="hot" className="mr-2"/>
+                        <h3 className="mt-1 font-bold">{post.title}</h3>
+                        <p className="fixed right-2 mt-1 text-gray-600">{post.date}</p>
+                    </div>
+                ))}
+            </div>
+            <div>
                 <div>
                     {getCurrentPosts().map((post) => (
-                        <div key={post.id} className="border-b p-2" onClick={() => navigate(`/post/${post.id}`)}>
+                        <div key={post.id} className="flex justify-between border-b p-2" onClick={() => navigate(`/post/${post.id}`)}>
                             <h3 className="font-bold">{post.title}</h3>
-                            <p>{post.content}</p>
+                            <p className="text-gray-600">{post.date}</p>
                         </div>
                     ))}
                 </div>
@@ -108,7 +127,8 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
                     />
                 </div>
             </div>
-            <div className="text-black mt-96 flex justify-center items-center">
+            <div className="fixed bottom-44 w-full h-20 flex justify-center items-center">
+            <div className="text-black flex justify-center items-center">
                 {currentPageBlock > 0 && (
                     <button
                         className="mx-1 px-3 py-1 rounded hover:bg-gray-700"
@@ -121,7 +141,7 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
                 {getPageNumbers().map((num) => (
                     <button
                         key={num}
-                        className={`mx-1 px-3 py-1 rounded hover:font-bold ${currentPage === num}`}
+                        className={`mx-1 px-3 py-1 rounded hover:font-bold ${currentPage === num ? 'font-bold' : ''}`}
                         onClick={() => handlePageClick(num)}
                     >
                         {num}
@@ -137,6 +157,7 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
                     </button>
                 )}
             </div>
+            </div>
 
             <button
                 onClick={() => navigate('/write')}
@@ -145,9 +166,9 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
                 게시글 작성
             </button>
 
-            <Footer/>
+            <Footer />
         </div>
     );
-}
+};
 
 export default BoardPage;

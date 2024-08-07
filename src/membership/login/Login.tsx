@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 // @ts-ignore
 import kakaoLogin from '../../image/kakao_login.png';
 // @ts-ignore
-import appleLogin from '../../image/apple_login.png';
+import naverLogin from '../../image/naver.png';
 
 declare global {
     interface Window {
@@ -132,7 +132,11 @@ function Login(props: any) {
                 className="flex items-center justify-center m-auto w-11/12 px-4 mb-3 cursor-pointer"
                 onClick={handleKakaoLogin}
             />
-            <img src={appleLogin} alt="apple" className="flex items-center justify-center m-auto w-11/12 px-4"/>
+            <div
+                className="flex items-center bg-[#1ec800] text-white m-auto justify-center px-5 py-2 w-10/12 rounded-md font-bold text-base">
+                <span className="text-2xl mr-2 font-extrabold">N</span>
+                <span className="tracking-tight">네이버 로그인</span>
+            </div>
         </div>
     );
 }

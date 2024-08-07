@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Footer from '../../footer/Footer';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 interface WeatherData {
     date: string;
@@ -13,6 +14,7 @@ interface WeatherData {
 const HomePage: React.FC = () => {
     const [weeklyWeather, setWeeklyWeather] = useState<WeatherData[]>([]);
     const [message, setMessage] = useState('');
+    const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
     useEffect(() => {
         const fetchWeather = async (lat: number, lon: number) => {
@@ -72,33 +74,47 @@ const HomePage: React.FC = () => {
         setMessage('');
     };
 
+    const handlePrevDay = () => {
+        setCurrentDayIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : weeklyWeather.length - 1));
+    };
+
+    const handleNextDay = () => {
+        setCurrentDayIndex((prevIndex) => (prevIndex < weeklyWeather.length - 1 ? prevIndex + 1 : 0));
+    };
+
     return (
         <div className="flex flex-col h-screen">
             <h1 className="font-tenor text-xl ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
                 smartcloset
             </h1>
-            <h1 className="text-2xl font-bold text-center py-4 mt-6">주간 날씨</h1>
-            <div className="flex justify-between bg-gray-300 text-black p-3 overflow-x-auto">
-            {weeklyWeather.length > 0 ? (
-                    weeklyWeather.map((day, index) => (
-                        <div key={index} className="flex flex-col items-center mx-2">
-                            <span>{day.date}</span>
-                            <img
-                                src={`http://openweathermap.org/img/wn/${day.icon}@2x.png`}
-                                alt="날씨 아이콘"
-                                className="w-16 h-16"
-                            />
-                            <span>{day.highTemp}°C {day.lowTemp}°C</span>
+            <div className="flex-grow flex flex-col -mt-16 items-center justify-center">
+                <h1 className="text-2xl font-bold text-center py-4">주간 날씨</h1>
+                <div className="bg-gray-300 text-black p-3 rounded-lg shadow-md w-full max-w-sm">
+                    {weeklyWeather.length > 0 ? (
+                        <div className="flex items-center justify-between">
+                            <button onClick={handlePrevDay} className="text-2xl p-2"><FaChevronLeft/></button>
+                            <div className="flex flex-col items-center flex-grow">
+                                <span className="text-lg font-semibold">{weeklyWeather[currentDayIndex].date}</span>
+                                <img
+                                    src={`http://openweathermap.org/img/wn/${weeklyWeather[currentDayIndex].icon}@2x.png`}
+                                    alt="날씨 아이콘"
+                                    className="w-20 h-20"
+                                />
+                                <span className="text-lg">
+                                    {weeklyWeather[currentDayIndex].highTemp}°C / {weeklyWeather[currentDayIndex].lowTemp}°C
+                                </span>
+                            </div>
+                            <button onClick={handleNextDay} className="text-2xl p-2"><FaChevronRight/></button>
                         </div>
-                    ))
-                ) : (
-                    <span>날씨 정보를 불러오는 중...</span>
-                )}
+                    ) : (
+                        <span className="flex justify-center">날씨 정보를 불러오는 중...</span>
+                    )}
+                </div>
             </div>
             <div
-                className="flex-grow overflow-y-auto p-4 w-11/12 mt-3 mb-24 items-center justify-center m-auto border border-black rounded-2xl">
+                className="flex-grow overflow-y-auto p-4 w-11/12 h-1/3 mt-3 mb-32 items-center justify-center m-auto border border-black rounded-2xl">
                 <div className="p-4 fixed bottom-28 w-11/12 -ml-3.5 -mb-3.5">
-                    <div className="flex">
+                    <div className="flex fixed bottom-36 w-10/12">
                         <input
                             type="text"
                             value={message}

@@ -11,10 +11,21 @@ import Logo from "./startlogo/start_logo";
 import EditProfile from "./pages/mypage/EditProfile";
 import WritePage from "./pages/boardpage/WritePage";
 import WriteDetailPage from "./pages/boardpage/WriteDetailPage";
+import NickNameChange from "./pages/mypage/nicknamechange/NickNameChange";
+import PassWordChange from "./pages/mypage/passwordchange/PassWordChange";
+import InformChange from "./pages/mypage/informchange/InformChange";
+
+interface Post {
+    id: number;
+    title: string;
+    content: string;
+    likes: number;
+    date: string;
+}
 
 function App() {
     const [showLogo, setShowLogo] = useState(true);
-    const [posts, setPosts] = useState<{ id: number; title: string; content: string }[]>([]);
+    const [posts, setPosts] = useState<Post[]>([]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -24,26 +35,19 @@ function App() {
         return () => clearTimeout(timer);
     }, []);
 
-    useEffect(() => {
-        // 로컬 스토리지에서 게시글 로드
-        const storedPosts = localStorage.getItem('posts');
-        if (storedPosts) {
-            setPosts(JSON.parse(storedPosts));
-        }
-    }, []);
-
-    useEffect(() => {
-        // 로컬 스토리지에 게시글 저장
-        localStorage.setItem('posts', JSON.stringify(posts));
-    }, [posts]);
-
-    const addPost = (title: string, content: string) => {
+    const addPost = (title: string, content: string, date: string) => {
         const newPost = {
             id: posts.length + 1,
             title,
-            content
+            content,
+            likes: 0,
+            date,
         };
         setPosts([...posts, newPost]);
+    };
+
+    const updatePostLikes = (postId: number, likes: number) => {
+        setPosts(posts.map(post => post.id === postId ? { ...post, likes } : post));
     };
 
     return (
@@ -57,7 +61,10 @@ function App() {
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/edit-profile" element={<EditProfile />} />
                 <Route path="/write" element={<WritePage addPost={addPost} />} />
-                <Route path="/post/:postId" element={<WriteDetailPage posts={posts} />} />
+                <Route path="/post/:postId" element={<WriteDetailPage posts={posts} updatePostLikes={updatePostLikes} />} />
+                <Route path="/nickname" element={<NickNameChange/>}/>
+                <Route path="/password" element={<PassWordChange/>}/>
+                <Route path="/inform" element={<InformChange/>}/>
             </Routes>
         </Router>
     );

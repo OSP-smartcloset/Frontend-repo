@@ -48,7 +48,11 @@ const HomePage: React.FC = () => {
                     return acc;
                 }, []);
 
-                setWeeklyWeather(dailyData);
+                setWeeklyWeather(dailyData.map((day: WeatherData) => ({
+                    ...day,
+                    highTemp: Math.round(day.highTemp),
+                    lowTemp: Math.round(day.lowTemp)
+                })));
             } catch (error) {
                 console.error('날씨 데이터를 불러오는데 실패했습니다', error);
             }
@@ -84,27 +88,28 @@ const HomePage: React.FC = () => {
 
     return (
         <div className="flex flex-col h-screen">
-            <h1 className="font-tenor text-xl ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
-                smartcloset
+            <div className="bg-white shadow-sm">
+            <h1 className="font-tenor text-2xl p-4 ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
+                코디'ing
             </h1>
-            <div className="flex-grow flex flex-col -mt-16 items-center justify-center">
-                <h1 className="text-2xl font-bold text-center py-4">주간 날씨</h1>
-                <div className="bg-gray-300 text-black p-3 rounded-lg shadow-md w-full max-w-sm">
+            </div>
+            <div className="flex-grow flex flex-col -mt-10 items-center justify-center">
+                <div className="text-black p-3 rounded-lg w-full max-w-sm">
                     {weeklyWeather.length > 0 ? (
                         <div className="flex items-center justify-between">
-                            <button onClick={handlePrevDay} className="text-2xl p-2"><FaChevronLeft/></button>
+                            <button onClick={handlePrevDay} className="text-xl p-2"><FaChevronLeft/></button>
                             <div className="flex flex-col items-center flex-grow">
                                 <span className="text-lg font-semibold">{weeklyWeather[currentDayIndex].date}</span>
                                 <img
                                     src={`http://openweathermap.org/img/wn/${weeklyWeather[currentDayIndex].icon}@2x.png`}
                                     alt="날씨 아이콘"
-                                    className="w-20 h-20"
+                                    className="w-12 h-12"
                                 />
-                                <span className="text-lg">
+                                <span className="text-sm">
                                     {weeklyWeather[currentDayIndex].highTemp}°C / {weeklyWeather[currentDayIndex].lowTemp}°C
                                 </span>
                             </div>
-                            <button onClick={handleNextDay} className="text-2xl p-2"><FaChevronRight/></button>
+                            <button onClick={handleNextDay} className="text-xl p-2"><FaChevronRight/></button>
                         </div>
                     ) : (
                         <span className="flex justify-center">날씨 정보를 불러오는 중...</span>
@@ -112,7 +117,7 @@ const HomePage: React.FC = () => {
                 </div>
             </div>
             <div
-                className="flex-grow overflow-y-auto p-4 w-11/12 h-1/3 mt-3 mb-32 items-center justify-center m-auto border border-black rounded-2xl">
+                className="flex-grow overflow-y-auto p-4 w-11/12 h-1/2 mt-3 mb-32 items-center justify-center m-auto border border-black rounded-2xl">
                 <div className="p-4 fixed bottom-28 w-11/12 -ml-3.5 -mb-3.5">
                     <div className="flex fixed bottom-36 w-10/12">
                         <input

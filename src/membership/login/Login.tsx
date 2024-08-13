@@ -21,6 +21,14 @@ function Login(props: any) {
         if (window.Kakao && !window.Kakao.isInitialized()) {
             window.Kakao.init('60dc0a4fc7bdbb8a8fccd9bef49a781c');
         }
+
+        const code = new URL(window.location.href).searchParams.get("code");
+        if (code) {
+            console.log("인가 코드:", code);
+            // 여기서 인가 코드를 사용할 수 있습니다.
+            // 예: 상태에 저장하거나 다른 처리를 할 수 있습니다.
+            // setAuthCode(code);
+        }
     }, []);
 
     const handleSignUp = () => {
@@ -57,6 +65,33 @@ function Login(props: any) {
             console.error("Kakao SDK is not loaded");
         }
     }
+
+    // const handleKakaoLogin = () => {
+    //     if (window.Kakao) {
+    //         window.Kakao.Auth.authorize({
+    //             redirectUri:
+    //                 'http://localhost:3000/kakao-login', // 실제 리다이렉트 URI로 변경해야 합니다.
+    //         });
+    //     } else {
+    //         console.error("Kakao SDK is not loaded");
+    //     }
+    // }
+
+    // useEffect(() => {
+    //     // 카카오 SDK 초기화 (기존 코드)
+    //     if (window.Kakao && !window.Kakao.isInitialized()) {
+    //         window.Kakao.init('60dc0a4fc7bdbb8a8fccd9bef49a781c');
+    //     }
+    //
+    //     // URL의 인가 코드 확인
+    //     const code = new URL(window.location.href).searchParams.get("code");
+    //     if (code) {
+    //         console.log("인가 코드:", code);
+    //         // 여기서 인가 코드를 사용할 수 있습니다.
+    //         // 예: 상태에 저장하거나 다른 처리를 할 수 있습니다.
+    //         // setAuthCode(code);
+    //     }
+    // }, []);
 
     return (
         <div className="App">

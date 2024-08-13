@@ -14,6 +14,7 @@ import WriteDetailPage from "./pages/boardpage/WriteDetailPage";
 import NickNameChange from "./pages/mypage/nicknamechange/NickNameChange";
 import PassWordChange from "./pages/mypage/passwordchange/PassWordChange";
 import InformChange from "./pages/mypage/informchange/InformChange";
+import EditPostPage from "./pages/boardpage/EditPostPage";
 
 interface Post {
     id: number;
@@ -21,6 +22,7 @@ interface Post {
     content: string;
     likes: number;
     date: string;
+    commentsCount: number;
 }
 
 function App() {
@@ -42,12 +44,21 @@ function App() {
             content,
             likes: 0,
             date,
+            commentsCount: 0,
         };
         setPosts([...posts, newPost]);
     };
 
     const updatePostLikes = (postId: number, likes: number) => {
         setPosts(posts.map(post => post.id === postId ? { ...post, likes } : post));
+    };
+
+    const updatePost = (postId: number, updatedPost: Post) => {
+        setPosts(posts.map(post => (post.id === postId ? updatedPost : post)));
+    };
+
+    const deletePost = (postId: number) => {
+        setPosts(posts.filter(post => post.id !== postId));
     };
 
     return (
@@ -61,7 +72,8 @@ function App() {
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/edit-profile" element={<EditProfile />} />
                 <Route path="/write" element={<WritePage addPost={addPost} />} />
-                <Route path="/post/:postId" element={<WriteDetailPage posts={posts} updatePostLikes={updatePostLikes} />} />
+                <Route path="/post/:postId" element={<WriteDetailPage posts={posts} updatePostLikes={updatePostLikes} deletePost={deletePost}/>} />
+                <Route path="/edit/:postId" element={<EditPostPage posts={posts} updatePost={updatePost} />}/>
                 <Route path="/nickname" element={<NickNameChange/>}/>
                 <Route path="/password" element={<PassWordChange/>}/>
                 <Route path="/inform" element={<InformChange/>}/>

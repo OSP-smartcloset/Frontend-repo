@@ -55,13 +55,15 @@ function MyPage() {
 
     return (
         <div className="pb-16">
-            <h1 className="font-tenor text-xl ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
-                smartcloset
+            <div className="bg-white shadow-sm">
+            <h1 className="font-tenor text-2xl p-4 ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
+                코디'ing
             </h1>
-            <div>
-                <CiBellOn className="fixed w-8 h-8 mr-1 top-0 right-0" onClick={toggleModal}/>
             </div>
-            <div className="flex items-center border-b border-black w-full p-4 mt-10">
+            <div>
+                <CiBellOn className="fixed w-8 h-8 mr-1 mt-4 top-0 right-2" onClick={toggleModal}/>
+            </div>
+            <div className="flex items-center border-b border-black w-full p-4 mt-3">
                 <FaRegUserCircle className="w-16 h-16 mr-4"/>
                 <div className="flex flex-col">
                     <p className="font-bold">닉네임</p>

@@ -93,11 +93,11 @@ const HomePage: React.FC = () => {
                 코디'ing
             </h1>
             </div>
-            <div className="flex-grow flex flex-col -mt-10 items-center justify-center">
+            <div className="flex-grow flex flex-col -mt-5 items-center justify-center">
                 <div className="text-black p-3 rounded-lg w-full max-w-sm">
                     {weeklyWeather.length > 0 ? (
                         <div className="flex items-center justify-between">
-                            <button onClick={handlePrevDay} className="text-xl p-2"><FaChevronLeft/></button>
+                            <button onClick={handlePrevDay} className="text-xl px-10 p-2"><FaChevronLeft/></button>
                             <div className="flex flex-col items-center flex-grow">
                                 <span className="text-lg font-semibold">{weeklyWeather[currentDayIndex].date}</span>
                                 <img
@@ -109,7 +109,7 @@ const HomePage: React.FC = () => {
                                     {weeklyWeather[currentDayIndex].highTemp}°C / {weeklyWeather[currentDayIndex].lowTemp}°C
                                 </span>
                             </div>
-                            <button onClick={handleNextDay} className="text-xl p-2"><FaChevronRight/></button>
+                            <button onClick={handleNextDay} className="text-xl px-10 p-2"><FaChevronRight/></button>
                         </div>
                     ) : (
                         <span className="flex justify-center">날씨 정보를 불러오는 중...</span>

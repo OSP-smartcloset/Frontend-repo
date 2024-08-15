@@ -129,7 +129,7 @@ function Login(props: any) {
             {/*    Smart Closet*/}
             {/*</h1>*/}
             <h1 className="font-tenor text-3xl text-center mt-48 font-bold tracking-tight bg-gradient-to-r from-blue-600 via-pink-400 to-yellow-300 text-transparent bg-clip-text">
-                Smart Closet
+                코디'ing
             </h1>
 
             <div className="flex flex-col items-center mt-20">

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {FaArrowLeft} from "react-icons/fa6";
+import { FaArrowLeft } from 'react-icons/fa';
+import axios from 'axios'; // axios 추가
 
 interface Post {
     id: number;
@@ -12,38 +13,66 @@ interface Post {
     commentsCount: number;
 }
 
-interface EditPostPageProps {
-    posts: Post[];
-    updatePost: (postId: number, updatedPost: Post) => void;
-}
-
-const EditPostPage: React.FC<EditPostPageProps> = ({ posts, updatePost }) => {
+const EditPostPage: React.FC = () => {
     const { postId } = useParams<{ postId: string }>();
     const navigate = useNavigate();
-    const post = posts.find(p => p.id === parseInt(postId || '', 10));
 
-    const [title, setTitle] = useState(post ? post.title : '');
-    const [content, setContent] = useState(post ? post.content : '');
+    const [post, setPost] = useState<Post | null>(null);
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchPost = async () => {
+            try {
+                const response = await axios.get(`/api/posts/${postId}`);
+                setPost(response.data);
+                setTitle(response.data.title);
+                setContent(response.data.content);
+                setLoading(false);
+            } catch (err) {
+                setError('게시글을 가져오는 데 실패했습니다.');
+                setLoading(false);
+            }
+        };
+
+        fetchPost();
+    }, [postId]);
+
+    const handleSave = async () => {
+        if (post) {
+            try {
+                const updatedPost = { ...post, title, content };
+                await axios.put(`/api/posts/${post.id}`, updatedPost);
+                navigate(`/post/${post.id}`);
+            } catch (err) {
+                setError('게시글을 수정하는 데 실패했습니다.');
+            }
+        }
+    };
+
+    const handleBack = () => {
+        navigate(`/post/${postId}`);
+    };
+
+    if (loading) {
+        return <div>로딩 중...</div>;
+    }
+
+    if (error) {
+        return <div>{error}</div>;
+    }
 
     if (!post) {
         return <div>게시글을 찾을 수 없습니다.</div>;
     }
 
-    const handleSave = () => {
-        const updatedPost = { ...post, title, content };
-        updatePost(post.id, updatedPost);
-        navigate(`/post/${post.id}`);
-    };
-
-    const handleBack = () => {
-        navigate(`/post/${post.id}`);
-    }
-
     return (
         <div className="p-4">
-            <div className="flex">
-            <FaArrowLeft onClick={handleBack} className="w-6 h-6"/>
-            <h1 className="font-bold m-auto text-xl">게시글 수정</h1>
+            <div className="flex items-center">
+                <FaArrowLeft onClick={handleBack} className="w-6 h-6 cursor-pointer" />
+                <h1 className="font-bold m-auto text-xl">게시글 수정</h1>
             </div>
             <hr className="w-full mt-2 mb-3" />
             <div className="mb-4">

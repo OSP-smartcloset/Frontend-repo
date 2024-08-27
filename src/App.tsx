@@ -15,6 +15,8 @@ import NickNameChange from "./pages/mypage/nicknamechange/NickNameChange";
 import PassWordChange from "./pages/mypage/passwordchange/PassWordChange";
 import InformChange from "./pages/mypage/informchange/InformChange";
 import EditPostPage from "./pages/boardpage/EditPostPage";
+import AuthCallback from "./membership/login/AuthCallBack";
+
 
 interface Post {
     id: number;
@@ -67,13 +69,14 @@ function App() {
                 <Route path="/" element={showLogo ? <Logo /> : <Login />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/home" element={<HomePage />} />
-                <Route path="/board" element={<BoardPage posts={posts} />} />
+                <Route path="/auth" element={<AuthCallback />} />
+                <Route path="/board" element={<BoardPage />} />
                 <Route path="/like" element={<LikePage />} />
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/edit-profile" element={<EditProfile />} />
-                <Route path="/write" element={<WritePage addPost={addPost} />} />
-                <Route path="/post/:postId" element={<WriteDetailPage posts={posts} updatePostLikes={updatePostLikes} deletePost={deletePost}/>} />
-                <Route path="/edit/:postId" element={<EditPostPage posts={posts} updatePost={updatePost} />}/>
+                <Route path="/write" element={<WritePage />} />
+                <Route path="/post/:postId" element={<WriteDetailPage updatePostLikes={updatePostLikes} deletePost={deletePost}/>} />
+                <Route path="/edit/:postId" element={<EditPostPage />}/>
                 <Route path="/nickname" element={<NickNameChange/>}/>
                 <Route path="/password" element={<PassWordChange/>}/>
                 <Route path="/inform" element={<InformChange/>}/>

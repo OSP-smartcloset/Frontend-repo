@@ -1,38 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Footer from "../../footer/Footer";
 // @ts-ignore
 import search from '../../image/search.png';
-import {CiBellOn, CiSearch, CiSquarePlus} from "react-icons/ci";
+import { CiBellOn, CiSearch, CiSquarePlus } from "react-icons/ci";
 import AlarmModal from "../../component/modal/AlarmModal";
 import SearchModal from "../../component/modal/SearchModal";
 // @ts-ignore
 import exam from '../../image/exam.png'
 
-interface Post {
+interface User {
+    userId: number;
+    loginId: string;
+    nickname: string;
+    profilePicture: string | null;
+    height: number;
+    weight: number;
+    platform: string;
+    gender: string;
+    date: string;
+    kakaold: string | null;
+}
+
+interface PostResponse {
     id: number;
     title: string;
     content: string;
     likes: number;
     date: string;
-    imageUrl?: string;
+    imageUrl: string | null;
     commentsCount: number;
-}
-
-interface BoardPageProps {
-    posts: Post[];
+    user: User;
+    comments: any[];
 }
 
 const postsPerPage = 5;
 
-
-const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
-    const [filteredPosts, setFilteredPosts] = useState<Post[]>(posts);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [currentPageBlock, setCurrentPageBlock] = useState(0);
+const BoardPage: React.FC = () => {
+    const [posts, setPosts] = useState<PostResponse[]>([]);
+    const [filteredPosts, setFilteredPosts] = useState<PostResponse[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false); // 로딩 상태 추가
+    const [hasMorePosts, setHasMorePosts] = useState(true); // 더 로드할 게시물이 있는지 확인하는 상태
+    const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+    const observer = useRef<IntersectionObserver | null>(null);
+
     const navigate = useNavigate();
 
     const toggleModal = () => {
@@ -43,58 +58,126 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
         setIsSearchModalOpen(!isSearchModalOpen);
     };
 
+    const fetchPosts = async () => {
+        try {
+            const response = await axios.get<PostResponse[]>('/api/posts', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            console.log('API Response:', response.data);
+            const postsData = response.data; // 데이터를 상태로 설정
+            setPosts(postsData);
+            setFilteredPosts(postsData);
+        } catch (error) {
+            console.error('Failed to fetch posts:', error);
+        }
+    };
+
+    const fetchMorePosts = async () => {
+        if (isLoadingMore || !hasMorePosts) return; // 이미 로딩 중이거나 더 이상 로드할 게시물이 없을 때 중지
+        setIsLoadingMore(true); // 로딩 상태 표시
+
+        try {
+            const lastPostId = posts[posts.length - 1]?.id || 0; // 마지막 게시물의 ID
+            const response = await axios.get<PostResponse[]>(`/api/posts/loadMore`, {
+                params: {
+                    lastPostId,
+                    limit: postsPerPage
+                }
+            });
+
+            const morePosts = response.data;
+
+            if (morePosts.length < postsPerPage) {
+                setHasMorePosts(false); // 더 이상 로드할 게시물이 없음을 알림
+            }
+
+            setPosts([...posts, ...morePosts]); // 추가된 게시물 목록을 기존 게시물에 합치기
+            setFilteredPosts([...posts, ...morePosts]); // 필터링된 목록도 업데이트
+        } catch (error) {
+            console.error('추가 게시물을 가져오는데 실패했습니다', error);
+        } finally {
+            setIsLoadingMore(false); // 로딩 상태 해제
+        }
+    };
+    useEffect(() => {
+        // 서버에서 바이너리 프로필 이미지 로드하기
+        const fetchProfileImage = async () => {
+            try {
+                const response = await axios.get('/api/users/profile-picture', {
+                    responseType: 'blob' // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                });
+
+                if (response.data) {
+                    // Blob 데이터를 URL로 변환
+                    const imageUrl = URL.createObjectURL(response.data);
+                    setProfileImageUrl(imageUrl); // 상태로 저장
+                }
+            } catch (error) {
+                console.error('프로필 이미지를 불러오는 중 오류가 발생했습니다.', error);
+            }
+        };
+
+        fetchProfileImage();
+    }, []);
+
+    useEffect(() => {
+        fetchPosts();
+    }, []);
+
     useEffect(() => {
         setFilteredPosts(posts);
     }, [posts]);
 
-    const getCurrentPosts = () => {
-        const indexOfLastPost = currentPage * postsPerPage;
-        const indexOfFirstPost = indexOfLastPost - postsPerPage;
-        return filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
-    };
+    useEffect(() => {
+        if (!isLoadingMore && hasMorePosts) {
+            const options = {
+                root: null, // viewport
+                rootMargin: '0px',
+                threshold: 1.0 // 100% 보일 때
+            };
 
-    const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
-    const totalBlocks = Math.ceil(totalPages / 5);
+            const callback = (entries: IntersectionObserverEntry[]) => {
+                if (entries[0].isIntersecting) {
+                    fetchMorePosts(); // 관찰된 요소가 보일 때 추가 게시물 로드
+                }
+            };
 
-    const handleSearchTitle = () => {
-        if (!searchTerm.trim()) {
-            setFilteredPosts(posts);
-        } else {
-            const filtered = posts.filter(post =>
-                post.title.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-            setFilteredPosts(filtered);
+            observer.current = new IntersectionObserver(callback, options);
+            const target = document.querySelector('#load-more-trigger');
+            if (target) {
+                observer.current.observe(target);
+            }
+
+            return () => {
+                if (observer.current) observer.current.disconnect();
+            };
+        }
+    }, [isLoadingMore, hasMorePosts, posts]);
+
+    const handleSearchTitle = async () => {
+        try {
+            if (!searchTerm.trim()) {
+                // 검색어가 없을 경우, 전체 게시물을 다시 가져옴
+                fetchPosts();
+            } else {
+                const token = localStorage.getItem('token'); // 토큰 가져오기
+                const response = await axios.get('/api/posts/search', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    params: {
+                        title: searchTerm // 검색어 전달
+                    }
+                });
+                setFilteredPosts(response.data); // 서버에서 검색된 게시물 목록을 설정
+            }
+        } catch (error) {
+            console.error('게시글 검색에 실패했습니다.', error);
         }
     };
 
-    const handlePageClick = (pageNumber: number) => {
-        setCurrentPage(pageNumber);
-    };
-
-    const handleNextBlock = () => {
-        if (currentPageBlock < totalBlocks - 1) {
-            setCurrentPageBlock(currentPageBlock + 1);
-            setCurrentPage((currentPageBlock + 1) * 5 + 1);
-        }
-    };
-
-    const handlePrevBlock = () => {
-        if (currentPageBlock > 0) {
-            setCurrentPageBlock(currentPageBlock - 1);
-            setCurrentPage(currentPageBlock * 5);
-        }
-    };
-
-    const getPageNumbers = () => {
-        const startPage = currentPageBlock * 5 + 1;
-        const endPage = Math.min(startPage + 4, totalPages);
-        const pageNumbers = [];
-
-        for (let i = startPage; i <= endPage; i++) {
-            pageNumbers.push(i);
-        }
-        return pageNumbers;
-    };
 
     return (
         <div className="min-h-screen">
@@ -110,35 +193,19 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
             </header>
 
             <main className="container mx-auto p-4">
-                {/*<div*/}
-                {/*    className="fixed bottom-32 border border-black w-11/12 rounded-xl flex items-center justify-center px-4">*/}
-                {/*    <div className="relative w-full max-w-lg">*/}
-                {/*        <input*/}
-                {/*            type="text"*/}
-                {/*            value={searchTerm}*/}
-                {/*            onChange={(e) => setSearchTerm(e.target.value)}*/}
-                {/*            onKeyPress={(e) => e.key === 'Enter' && handleSearchTitle()}*/}
-                {/*            placeholder="제목을 입력해 주세요."*/}
-                {/*            className="w-full mt-2 pl-10 mb-3 border-0 rounded"*/}
-                {/*        />*/}
-                {/*        <img*/}
-                {/*            src={search}*/}
-                {/*            alt="Search"*/}
-                {/*            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"*/}
-                {/*            onClick={handleSearchTitle}*/}
-                {/*        />*/}
-                {/*    </div>*/}
-                {/*</div>*/}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-                    {getCurrentPosts().map((post) => (
+                    {filteredPosts.map((post) => (
                         <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
                              onClick={() => navigate(`/post/${post.id}`)}>
                             {post.imageUrl &&
                                 <img src={post.imageUrl} alt={post.title} className="w-full h-48 object-cover"/>}
                             <div className="p-4">
                                 <div className="flex">
-                                    <img src={exam} alt={post.title} className="w-10 h-10 rounded-full"/>
-                                    <h3 className="text-xl font-bold ml-3 ">{post.id}</h3>
+                                    {post.user?.profilePicture && (
+                                        <img src={post.user.profilePicture} alt={post.user?.nickname || 'User'}
+                                             className="w-10 h-10 rounded-full"/>
+                                    )}
+                                    <h3 className="text-xl font-bold ml-3 ">{post.user?.nickname || 'Anonymous'}</h3>
                                 </div>
                                 <h3 className="text-xl font-bold mt-2">{post.title}</h3>
                                 <p className="text-gray-600 mt-2 ml-1">{post.content}</p>
@@ -153,41 +220,14 @@ const BoardPage: React.FC<BoardPageProps> = ({ posts }) => {
                         </div>
                     ))}
                 </div>
+
+                {/* 스크롤 끝 감지용 요소 */}
+                <div id="load-more-trigger" style={{height: '20px'}}></div>
             </main>
-            <div className="fixed bottom-28 w-full h-20 flex justify-center items-center">
-                <div className="text-black flex justify-center items-center">
-                    {currentPageBlock > 0 && (
-                        <button
-                            className="mx-1 px-3 py-1 rounded hover:bg-gray-700"
-                            onClick={handlePrevBlock}
-                        >
-                            이전
-                        </button>
-                    )}
 
-                    {getPageNumbers().map((num) => (
-                        <button
-                            key={num}
-                            className={`mx-1 px-3 py-1 rounded hover:font-bold ${currentPage === num ? 'font-bold' : ''}`}
-                            onClick={() => handlePageClick(num)}
-                        >
-                            {num}
-                        </button>
-                    ))}
-
-                    {currentPageBlock < totalBlocks - 1 && (
-                        <button
-                            className="mx-1 px-3 py-1 rounded hover:font-bold"
-                            onClick={handleNextBlock}
-                        >
-                            다음
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <AlarmModal isOpen={isModalOpen} onClose={toggleModal} />
-            <SearchModal isOpen={isSearchModalOpen} onClose={toggleSearchModal} searchTerm={searchTerm} setSearchTerm={setSearchTerm} handleSearchTitle={handleSearchTitle} />
+            <AlarmModal isOpen={isModalOpen} onClose={toggleModal}/>
+            <SearchModal isOpen={isSearchModalOpen} onClose={toggleSearchModal} searchTerm={searchTerm}
+                         setSearchTerm={setSearchTerm} handleSearchTitle={handleSearchTitle}/>
             <Footer/>
         </div>
     );

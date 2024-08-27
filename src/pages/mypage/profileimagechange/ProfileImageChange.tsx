@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import axios from 'axios';
 
 interface ModalProps {
     isOpen: boolean;
@@ -7,6 +8,8 @@ interface ModalProps {
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     if (!isOpen) return null;
 
@@ -16,11 +19,33 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
         }
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            // 여기서 파일을 처리합니다 (업로드, 미리보기 등)
-            console.log(file.name);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            setLoading(true);
+            setError("");
+
+            try {
+                const response = await axios.put('/api/users/profile-picture', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+
+                if (response.status === 200) {
+                    alert('프로필 사진이 성공적으로 변경되었습니다.');
+                    onClose(); // 변경 후 모달 닫기
+                } else {
+                    setError('파일 업로드에 실패했습니다.');
+                }
+            } catch (error) {
+                setError('파일 업로드 중 오류가 발생했습니다.');
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -42,6 +67,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
                     onChange={handleFileChange}
                     className="hidden" // 숨기기
                 />
+                {loading && <p>업로드 중...</p>}
+                {error && <p className="text-red-500">{error}</p>}
                 <div className="flex justify-end">
                     <button onClick={onClose} className="bg-black text-white px-4 py-2 rounded-lg">닫기</button>
                 </div>

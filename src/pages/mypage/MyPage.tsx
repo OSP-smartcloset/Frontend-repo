@@ -1,49 +1,93 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from "../../footer/Footer";
 import { CiBellOn } from "react-icons/ci";
 import { FaRegUserCircle } from "react-icons/fa";
+import axios from 'axios';
+import AlarmModal from '../../component/modal/AlarmModal';
 
-// @ts-ignore
-const AlarmModal = ({ isOpen, onClose }) => {
-    const [isAlarmOn, setIsAlarmOn] = useState(false);
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold">알림 설정</h2>
-                    <button onClick={onClose} className="text-gray-500">&times;</button>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span>알림 설정</span>
-                    <button
-                        onClick={() => setIsAlarmOn(!isAlarmOn)}
-                        className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                            isAlarmOn ? 'bg-green-500' : 'bg-gray-300'
-                        }`}
-                    >
-                        <div className={`w-4 h-4 rounded-full bg-white transform transition-transform duration-300 ease-in-out ${
-                            isAlarmOn ? 'translate-x-6' : ''
-                        }`} />
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
+interface Post {
+    id: number;
+    title: string;
+    content: string;
+    likes: number;
+    date: string;
+    imageUrl?: string;
+    commentsCount: number;
+}
 
 function MyPage() {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [posts, setPosts] = useState([
-        { id: 1, imageUrl: 'https://image.msscdn.net/thumbnails/display/images/usersnap/2023/06/06/77188ddf38ad4e1ebd1325fb249a88de.jpg?w=780' },
-        { id: 2, imageUrl: 'https://image.msscdn.net/thumbnails/display/images/usersnap/2024/03/10/c5cce57c39e340499146800e4cc682fd.jpg?w=780' },
-        { id: 3, imageUrl: 'https://static.lookpin.co.kr/20220610190749-01af/f3925ce08397ab61a95388f4097231b8.jpg' },
-        // 더 많은 게시물 추가 가능
-    ]);
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+    const [user, setUser] = useState({ nickname: '', loginId: '', weight: '', height: '' });
+
+    // 로컬스토리지에서 사용자 정보 가져오기
+    useEffect(() => {
+        const nickname = localStorage.getItem('nickname');
+        const loginId = localStorage.getItem('loginId');
+        const weight = localStorage.getItem('weight');
+        const height = localStorage.getItem('height');
+
+        if (nickname && loginId && weight && height) {
+            setUser({ nickname, loginId, weight, height });
+        }
+    }, []);
+
+    const fetchUserPosts = async () => {
+        try {
+            const token = localStorage.getItem('token'); // 로그인 토큰 확인
+            if (!token) {
+                console.error('토큰이 없습니다.');
+                return;
+            }
+
+            const response = await axios.get('/api/posts/user', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('성공 응답:', response);
+            console.log('응답 데이터:', response.data);
+
+            setPosts(response.data); // 사용자의 게시글 상태에 저장
+        } catch (error: any) {
+            console.error('사용자의 게시글을 가져오는데 실패했습니다', error);
+            if (error.response) {
+                console.log('에러 응답:', error.response);
+                console.log('에러 응답 데이터:', error.response.data);
+                console.log('에러 상태 코드:', error.response.status);
+            }
+        }
+    };
+
+
+    useEffect(() => {
+        fetchUserPosts();
+    }, []);
+
+    // 프로필 이미지를 서버에서 불러오는 함수
+    useEffect(() => {
+        const fetchProfileImage = async () => {
+            try {
+                const response = await axios.get('/api/users/profile-picture', {
+                    responseType: 'blob' // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                });
+
+                if (response.data) {
+                    const imageUrl = URL.createObjectURL(response.data);
+                    setProfileImageUrl(imageUrl); // 상태에 프로필 이미지 저장
+                }
+            } catch (error) {
+                console.error('프로필 이미지를 불러오는 중 오류가 발생했습니다.', error);
+            }
+        };
+
+        fetchProfileImage();
+    }, []);
 
     const handleEditProfile = () => {
         navigate('/edit-profile');
@@ -56,19 +100,23 @@ function MyPage() {
     return (
         <div className="pb-16">
             <div className="bg-white shadow-sm">
-            <h1 className="font-tenor text-2xl p-4 ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
-                코디'ing
-            </h1>
+                <h1 className="font-tenor text-2xl p-4 ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
+                    코디'ing
+                </h1>
             </div>
             <div>
-                <CiBellOn className="fixed w-8 h-8 mr-1 mt-4 top-0 right-2" onClick={toggleModal}/>
+                <CiBellOn className="fixed w-8 h-8 mr-1 mt-4 top-0 right-2" onClick={toggleModal} />
             </div>
             <div className="flex items-center border-b border-black w-full p-4 mt-3">
-                <FaRegUserCircle className="w-16 h-16 mr-4"/>
+                {profileImageUrl ? (
+                    <img src={profileImageUrl} alt="Profile" className="w-16 h-16 rounded-full mr-4 object-cover" />
+                ) : (
+                    <FaRegUserCircle className="w-16 h-16 mr-4" />
+                )}
                 <div className="flex flex-col">
-                    <p className="font-bold">닉네임</p>
-                    <p>173cm 68kg</p>
-                    <p>test@kakao.com</p>
+                    <p className="font-bold">{user.nickname}</p>
+                    <p>{user.height}cm {user.weight}kg</p>
+                    <p>{user.loginId}</p>
                 </div>
                 <button
                     className="ml-auto border border-black rounded-xl p-2 text-sm"
@@ -86,7 +134,7 @@ function MyPage() {
                 </div>
             </div>
             <AlarmModal isOpen={isModalOpen} onClose={toggleModal} />
-            <Footer/>
+            <Footer />
         </div>
     );
 }

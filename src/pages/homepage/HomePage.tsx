@@ -11,10 +11,19 @@ interface WeatherData {
     description: string;
 }
 
+interface Message {
+    sender: 'user' | 'bot';
+    message: string;
+}
+
 const HomePage: React.FC = () => {
     const [weeklyWeather, setWeeklyWeather] = useState<WeatherData[]>([]);
     const [message, setMessage] = useState('');
+    const [messages, setMessages] = useState<Message[]>([]);
     const [currentDayIndex, setCurrentDayIndex] = useState(0);
+    const [recommendation, setRecommendation] = useState('');
+    const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchWeather = async (lat: number, lon: number) => {
@@ -38,6 +47,7 @@ const HomePage: React.FC = () => {
                             icon: curr.weather[0].icon,
                             highTemp: curr.main.temp_max,
                             lowTemp: curr.main.temp_min,
+                            description: curr.weather[0].description // 날씨 설명 추가
                         };
                         acc.push(existingDay);
                     }
@@ -61,6 +71,10 @@ const HomePage: React.FC = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
+                    setLocation({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
                     fetchWeather(position.coords.latitude, position.coords.longitude);
                 },
                 (error) => {
@@ -72,11 +86,48 @@ const HomePage: React.FC = () => {
         }
     }, []);
 
-    const handleSendMessage = () => {
-        // GPT API 연동 로직 (추후 구현)
-        console.log('메시지 전송:', message);
-        setMessage('');
-    };
+    // const handleSendMessage = async () => {
+    //     if (message.trim() === '') {
+    //         alert('메시지를 입력해 주세요.');
+    //         return;
+    //     }
+    //
+    //     setMessages([...messages, { sender: 'user', message }]);
+    //     setMessage('');
+    //     setLoading(true);
+    //
+    //     try {
+    //         const response = await fetch(apiEndpoint, {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //                 'Authorization': `Bearer ${apiKey}`,
+    //             },
+    //             body: JSON.stringify({
+    //                 model: 'gpt-4', // GPT 모델 선택
+    //                 messages: [{ role: 'user', content: message }],
+    //                 max_tokens: 1024,
+    //                 top_p: 1,
+    //                 temperature: 1,
+    //                 frequency_penalty: 0.5,
+    //                 presence_penalty: 0.5,
+    //                 stop: ['문장 생성 중단 단어'],
+    //             }),
+    //         });
+    //
+    //         const data = await response.json();
+    //         const gptMessage = data.choices?.[0]?.message?.content || 'No response';
+    //         setMessages([...messages, { sender: 'user', message }, { sender: 'bot', message: gptMessage }]);
+    //         setRecommendation(gptMessage);
+    //     } catch (error) {
+    //         console.error('메시지 전송 중 에러 발생:', error);
+    //         setRecommendation('오류 발생!');
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    //
+    //     setMessage('');
+    // };
 
     const handlePrevDay = () => {
         setCurrentDayIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : weeklyWeather.length - 1));
@@ -89,9 +140,9 @@ const HomePage: React.FC = () => {
     return (
         <div className="flex flex-col h-screen">
             <div className="bg-white shadow-sm">
-            <h1 className="font-tenor text-2xl p-4 ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
-                코디'ing
-            </h1>
+                <h1 className="font-tenor text-2xl p-4 ml-2 font-bold tracking-tight bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-transparent bg-clip-text inline-block">
+                    코디'ing
+                </h1>
             </div>
             <div className="flex-grow flex flex-col -mt-5 items-center justify-center">
                 <div className="text-black p-3 rounded-lg w-full max-w-sm">
@@ -117,28 +168,45 @@ const HomePage: React.FC = () => {
                 </div>
             </div>
             <div
-                className="flex-grow overflow-y-auto p-4 w-11/12 h-1/2 mt-3 mb-32 items-center justify-center m-auto border border-black rounded-2xl">
-                <div className="p-4 fixed bottom-28 w-11/12 -ml-3.5 -mb-3.5">
-                    <div className="flex fixed bottom-36 w-10/12">
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            className="flex-grow border rounded-l-2xl p-2"
-                            placeholder="메시지를 입력하세요..."
-                        />
-                        <button
-                            onClick={handleSendMessage}
-                            className="bg-yellow-200 text-black rounded-r-2xl px-4 py-2"
-                        >
-                            전송
-                        </button>
-                    </div>
+                className="flex-grow p-4 w-11/12 h-1/2 mb-24 ml-2.5 items-center justify-center m-auto border border-black rounded-2xl relative"
+            >
+                <div className="flex flex-col space-y-4">
+                    {/* 대화 내역 표시 */}
+                    {messages.map((msg, index) => (
+                        <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div
+                                className={`p-3 rounded-xl shadow-md max-w-xs ${msg.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
+                            >
+                                {msg.message}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
-            <Footer/>
-        </div>
-    );
+            {/* 메시지 입력란 */}
+            <div className="p-4 bottom-28 w-11/12 ml-4 -mb-3.5">
+                <div className="flex fixed bottom-36 w-10/12">
+                    <input
+                        type="text"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        className="flex-grow border rounded-l-2xl p-2"
+                        placeholder="메시지를 입력하세요..."
+                        disabled={loading}
+                    />
+                    <button
+                        // onClick={handleSendMessage}
+                        className="bg-yellow-200 text-black rounded-r-2xl px-4 py-2"
+                        disabled={loading}
+                    >
+                        {loading ? '전송 중...' : '전송'}
+                    </button>
+                </div>
+            </div>
+    <Footer/>
+</div>
+)
+    ;
 };
 
 export default HomePage;

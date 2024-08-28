@@ -44,30 +44,12 @@ function Login() {
         }
     };
 
-    const Rest_api_key = '60dc0a4fc7bdbb8a8fccd9bef49a781c'; // REST API KEY
+    const Rest_api_key = 'c63208be1a9b8d67def7f82660b3d27b'; // REST API KEY
     const redirect_uri = 'http://localhost:3000/auth'; // Redirect URI
     const kakaoURL = `https://kauth.kakao.com/oauth/authorize?client_id=${Rest_api_key}&redirect_uri=${redirect_uri}&response_type=code`;
 
     const handleKakaoLogin = () => {
         window.location.href = kakaoURL;
-    };
-
-    const handleNaverLogin = async () => {
-        try {
-            const response = await fetch('/api/users/naver/login', {
-                method: 'POST',
-            });
-
-            if (response.ok) {
-                console.log('네이버 로그인 백엔드 처리 성공');
-                navigate('/home');
-            } else {
-                console.error('네이버 로그인 백엔드 처리 실패');
-                alert('네이버 로그인 중 문제가 발생했습니다.');
-            }
-        } catch (error) {
-            console.error('네이버 로그인 요청 중 에러 발생:', error);
-        }
     };
 
     return (
@@ -111,12 +93,6 @@ function Login() {
                 className="flex items-center justify-center m-auto w-11/12 px-4 mb-3 cursor-pointer"
                 onClick={handleKakaoLogin}
             />
-            <div
-                className="flex items-center bg-[#1ec800] text-white m-auto justify-center px-5 py-2 w-10/12 rounded-md font-bold text-base"
-                onClick={handleNaverLogin}>
-                <span className="text-2xl mr-2 font-extrabold">N</span>
-                <span className="tracking-tight">네이버 로그인</span>
-            </div>
         </div>
     );
 }

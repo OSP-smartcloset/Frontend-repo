@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa6';
 
@@ -6,6 +6,7 @@ import { FaArrowLeft } from 'react-icons/fa6';
 interface User {
     email?: string;
     gender?: string;
+    nickname?: string;
 }
 
 // Form data type
@@ -24,13 +25,20 @@ function SignUp() {
     const user: User = location.state?.user || {};
     const [id, setId] = React.useState<string>(user.email || '');
     const [password, setPassword] = React.useState<string>('');
-    const [nickname, setNickname] = React.useState<string>('');
+    const [nickname, setNickname] = React.useState<string>(user.nickname || '');
     const [gender, setGender] = React.useState<string>(user.gender || '');
     const [height, setHeight] = React.useState<string>('');
     const [weight, setWeight] = React.useState<string>('');
     const [idAvailable, setIdAvailable] = React.useState<boolean>(true);
     const [nicknameAvailable, setNicknameAvailable] = React.useState<boolean>(true);
     const navigate = useNavigate();
+
+    // 닉네임이 있는 경우, 해당 값으로 설정
+    useEffect(() => {
+        if (user.nickname) {
+            setNickname(user.nickname); // 닉네임이 존재할 경우 설정
+        }
+    }, [user.nickname]);
 
     // ID 중복 확인
     const checkIdAvailability = async () => {
@@ -171,6 +179,7 @@ function SignUp() {
                             value={nickname}
                             className="border rounded-lg w-full p-2 pr-20"
                             onChange={(e) => setNickname(e.target.value)}
+                            readOnly={!!user.nickname}
                         />
                         <button
                             className="absolute border rounded-2xl border-blue-300 p-1 right-2 top-1/2 transform -translate-y-1/2 text-black text-sm"

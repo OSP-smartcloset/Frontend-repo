@@ -9,6 +9,7 @@ import AlarmModal from "../../component/modal/AlarmModal";
 import SearchModal from "../../component/modal/SearchModal";
 // @ts-ignore
 import exam from '../../image/exam.png'
+import {FaRegUserCircle} from "react-icons/fa";
 
 interface User {
     userId: number;
@@ -31,9 +32,11 @@ interface PostResponse {
     date: string;
     imageUrl: string | null;
     commentsCount: number;
-    user: User;
-    comments: any[];
+    nickname : string;
+    userId: number;
 }
+
+const BASE_URL = 'http://ec2-13-124-254-196.ap-northeast-2.compute.amazonaws.com:8080'; // 서버의 기본 URL
 
 const postsPerPage = 5;
 
@@ -46,6 +49,7 @@ const BoardPage: React.FC = () => {
     const [isLoadingMore, setIsLoadingMore] = useState(false); // 로딩 상태 추가
     const [hasMorePosts, setHasMorePosts] = useState(true); // 더 로드할 게시물이 있는지 확인하는 상태
     const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+    const [user, setUser] = useState({ nickname: '', loginId: '', weight: '', height: '' });
     const observer = useRef<IntersectionObserver | null>(null);
 
     const navigate = useNavigate();
@@ -57,6 +61,21 @@ const BoardPage: React.FC = () => {
     const toggleSearchModal = () => {
         setIsSearchModalOpen(!isSearchModalOpen);
     };
+
+    useEffect(() => {
+        const nickname = localStorage.getItem('nickname');
+        const loginId = localStorage.getItem('loginId');
+        const weight = localStorage.getItem('weight');
+        const height = localStorage.getItem('height');
+        const storedProfileImageUrl = localStorage.getItem('profile_image'); // 프로필 이미지 가져오기
+
+        if (nickname && loginId && weight && height) {
+            setUser({ nickname, loginId, weight, height });
+        }
+        if (storedProfileImageUrl) {
+            setProfileImageUrl(storedProfileImageUrl); // 로컬스토리지에서 가져온 프로필 이미지 설정
+        }
+    }, []);
 
     const fetchPosts = async () => {
         try {
@@ -104,9 +123,13 @@ const BoardPage: React.FC = () => {
     useEffect(() => {
         // 서버에서 바이너리 프로필 이미지 로드하기
         const fetchProfileImage = async () => {
+            const token = localStorage.getItem('token');
             try {
                 const response = await axios.get('/api/users/profile-picture', {
-                    responseType: 'blob' // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    responseType: 'blob',// 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // 인증 헤더 추가
+                    },
                 });
 
                 if (response.data) {
@@ -115,7 +138,7 @@ const BoardPage: React.FC = () => {
                     setProfileImageUrl(imageUrl); // 상태로 저장
                 }
             } catch (error) {
-                console.error('프로필 이미지를 불러오는 중 오류가 발생했습니다.', error);
+                setProfileImageUrl(profileImageUrl);
             }
         };
 
@@ -197,15 +220,16 @@ const BoardPage: React.FC = () => {
                     {filteredPosts.map((post) => (
                         <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
                              onClick={() => navigate(`/post/${post.id}`)}>
-                            {post.imageUrl &&
-                                <img src={post.imageUrl} alt={post.title} className="w-full h-48 object-cover"/>}
+                            {post?.imageUrl &&
+                                <img src={`${BASE_URL}${post.imageUrl}`} alt={post.title} className="w-full h-48 object-cover"/>}
                             <div className="p-4">
                                 <div className="flex">
-                                    {post.user?.profilePicture && (
-                                        <img src={post.user.profilePicture} alt={post.user?.nickname || 'User'}
-                                             className="w-10 h-10 rounded-full"/>
+                                    {profileImageUrl ? (
+                                        <img src={profileImageUrl} alt="Profile" className="w-8 h-8 rounded-full mr-4 object-cover" />
+                                    ) : (
+                                        <FaRegUserCircle className="w-8 h-8 mr-4" />
                                     )}
-                                    <h3 className="text-xl font-bold ml-3 ">{post.user?.nickname || 'Anonymous'}</h3>
+                                    <h3 className="text-xl font-bold ">{post.nickname || 'Anonymous'}</h3>
                                 </div>
                                 <h3 className="text-xl font-bold mt-2">{post.title}</h3>
                                 <p className="text-gray-600 mt-2 ml-1">{post.content}</p>

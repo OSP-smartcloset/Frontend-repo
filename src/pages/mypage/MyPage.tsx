@@ -29,9 +29,13 @@ function MyPage() {
         const loginId = localStorage.getItem('loginId');
         const weight = localStorage.getItem('weight');
         const height = localStorage.getItem('height');
+        const storedProfileImageUrl = localStorage.getItem('profile_image'); // 프로필 이미지 가져오기
 
         if (nickname && loginId && weight && height) {
             setUser({ nickname, loginId, weight, height });
+        }
+        if (storedProfileImageUrl) {
+            setProfileImageUrl(storedProfileImageUrl); // 로컬스토리지에서 가져온 프로필 이미지 설정
         }
     }, []);
 
@@ -72,9 +76,13 @@ function MyPage() {
     // 프로필 이미지를 서버에서 불러오는 함수
     useEffect(() => {
         const fetchProfileImage = async () => {
+            const token = localStorage.getItem('token');
             try {
                 const response = await axios.get('/api/users/profile-picture', {
-                    responseType: 'blob' // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    responseType: 'blob',// 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // 인증 헤더 추가
+                    },
                 });
 
                 if (response.data) {

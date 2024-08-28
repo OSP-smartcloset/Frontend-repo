@@ -25,6 +25,8 @@ const HomePage: React.FC = () => {
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
+    const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
+
     useEffect(() => {
         const fetchWeather = async (lat: number, lon: number) => {
             const apiKey = '80893c87e1b6f206b88f0cc97fdbe141';
@@ -71,11 +73,10 @@ const HomePage: React.FC = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    setLocation({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                    });
-                    fetchWeather(position.coords.latitude, position.coords.longitude);
+                    const { latitude, longitude } = position.coords;
+                    console.log('위치 정보:', { latitude, longitude });
+                    setLocation({ latitude, longitude });
+                    fetchWeather(latitude, longitude);
                 },
                 (error) => {
                     console.error('위치 정보를 가져오는데 실패했습니다', error);
@@ -86,48 +87,69 @@ const HomePage: React.FC = () => {
         }
     }, []);
 
-    // const handleSendMessage = async () => {
-    //     if (message.trim() === '') {
-    //         alert('메시지를 입력해 주세요.');
-    //         return;
-    //     }
-    //
-    //     setMessages([...messages, { sender: 'user', message }]);
-    //     setMessage('');
-    //     setLoading(true);
-    //
-    //     try {
-    //         const response = await fetch(apiEndpoint, {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 'Authorization': `Bearer ${apiKey}`,
-    //             },
-    //             body: JSON.stringify({
-    //                 model: 'gpt-4', // GPT 모델 선택
-    //                 messages: [{ role: 'user', content: message }],
-    //                 max_tokens: 1024,
-    //                 top_p: 1,
-    //                 temperature: 1,
-    //                 frequency_penalty: 0.5,
-    //                 presence_penalty: 0.5,
-    //                 stop: ['문장 생성 중단 단어'],
-    //             }),
-    //         });
-    //
-    //         const data = await response.json();
-    //         const gptMessage = data.choices?.[0]?.message?.content || 'No response';
-    //         setMessages([...messages, { sender: 'user', message }, { sender: 'bot', message: gptMessage }]);
-    //         setRecommendation(gptMessage);
-    //     } catch (error) {
-    //         console.error('메시지 전송 중 에러 발생:', error);
-    //         setRecommendation('오류 발생!');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    //
-    //     setMessage('');
-    // };
+    const handleSendMessage = async () => {
+        if (message.trim() === '') {
+            alert('메시지를 입력해 주세요.');
+            return;
+        }
+
+        setMessages([...messages, { sender: 'user', message }]);
+        setMessage('');
+        setLoading(true);
+
+        try {
+            const gptMessages = [{ role: 'user', content: message }];
+
+            // 위치 정보와 날씨 정보를 GPT에게 전달
+            if (location && weeklyWeather.length > 0) {
+                const currentWeather = weeklyWeather[currentDayIndex];
+                gptMessages.push({
+                    role: 'system',
+                    content: `현재 사용자의 위치는 위도 ${location.latitude}, 경도 ${location.longitude}입니다. 오늘의 날씨는 ${currentWeather.description}이고, 기온은 ${currentWeather.highTemp}°C (최고) / ${currentWeather.lowTemp}°C (최저)입니다. 이 정보를 바탕으로 적절한 옷차림을 추천해 주세요.`
+                });
+            } else {
+                gptMessages.push({
+                    role: 'system',
+                    content: `현재 사용자의 위치 정보를 알 수 없거나 날씨 정보가 없습니다. 기본적인 옷차림 추천을 부탁드립니다.`
+                });
+            }
+
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.REACT_APP_GPT_API_KEY}`,
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4',
+                    messages: gptMessages,
+                    max_tokens: 1024,
+                    top_p: 1,
+                    temperature: 1,
+                    frequency_penalty: 0.5,
+                    presence_penalty: 0.5,
+                    stop: ['문장 생성 중단 단어'],
+                }),
+            });
+
+            const data = await response.json();
+            const gptMessage = data.choices?.[0]?.message?.content || 'No response';
+
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                { sender: 'bot', message: gptMessage },
+            ]);
+            setRecommendation(gptMessage);
+        } catch (error) {
+            console.error('메시지 전송 중 에러 발생:', error);
+            setRecommendation('오류 발생!');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
 
     const handlePrevDay = () => {
         setCurrentDayIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : weeklyWeather.length - 1));
@@ -136,7 +158,6 @@ const HomePage: React.FC = () => {
     const handleNextDay = () => {
         setCurrentDayIndex((prevIndex) => (prevIndex < weeklyWeather.length - 1 ? prevIndex + 1 : 0));
     };
-
     return (
         <div className="flex flex-col h-screen">
             <div className="bg-white shadow-sm">
@@ -168,7 +189,7 @@ const HomePage: React.FC = () => {
                 </div>
             </div>
             <div
-                className="flex-grow p-4 w-11/12 h-1/2 mb-24 ml-2.5 items-center justify-center m-auto border border-black rounded-2xl relative"
+                className="flex-grow p-4 w-11/12 h-96 mb-32 ml-4 items-center justify-center m-auto border border-black rounded-2xl relative overflow-y-auto"
             >
                 <div className="flex flex-col space-y-4">
                     {/* 대화 내역 표시 */}
@@ -184,8 +205,8 @@ const HomePage: React.FC = () => {
                 </div>
             </div>
             {/* 메시지 입력란 */}
-            <div className="p-4 bottom-28 w-11/12 ml-4 -mb-3.5">
-                <div className="flex fixed bottom-36 w-10/12">
+            <div className="p-4 w-11/12 ml-4 -mb-3.5">
+                <div className="flex fixed bottom-24 w-10/12">
                     <input
                         type="text"
                         value={message}
@@ -195,7 +216,7 @@ const HomePage: React.FC = () => {
                         disabled={loading}
                     />
                     <button
-                        // onClick={handleSendMessage}
+                        onClick={handleSendMessage}
                         className="bg-yellow-200 text-black rounded-r-2xl px-4 py-2"
                         disabled={loading}
                     >

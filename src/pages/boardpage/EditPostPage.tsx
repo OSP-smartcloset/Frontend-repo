@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import axios from 'axios'; // axios 추가
+import axios from 'axios';
 
 interface Post {
     id: number;
@@ -11,6 +11,7 @@ interface Post {
     date: string;
     imageUrl?: string;
     commentsCount: number;
+    nickname: string; // 추가된 필드
 }
 
 const EditPostPage: React.FC = () => {
@@ -26,7 +27,11 @@ const EditPostPage: React.FC = () => {
     useEffect(() => {
         const fetchPost = async () => {
             try {
-                const response = await axios.get(`/api/posts/${postId}`);
+                const response = await axios.get(`/api/posts/${postId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`, // 사용자 인증 토큰 추가
+                    },
+                });
                 setPost(response.data);
                 setTitle(response.data.title);
                 setContent(response.data.content);
@@ -44,7 +49,11 @@ const EditPostPage: React.FC = () => {
         if (post) {
             try {
                 const updatedPost = { ...post, title, content };
-                await axios.put(`/api/posts/${post.id}`, updatedPost);
+                await axios.put(`/api/posts/${post.id}`, updatedPost, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`, // 사용자 인증 토큰 추가
+                    },
+                });
                 navigate(`/post/${post.id}`);
             } catch (err) {
                 setError('게시글을 수정하는 데 실패했습니다.');
@@ -92,6 +101,21 @@ const EditPostPage: React.FC = () => {
                     className="w-full p-2 border rounded"
                 />
             </div>
+            <div className="mb-4">
+                <label className="block mb-2 font-bold">작성자</label>
+                <input
+                    type="text"
+                    value={post.nickname}
+                    disabled
+                    className="w-full p-2 border rounded bg-gray-100"
+                />
+            </div>
+            {post.imageUrl && (
+                <div className="mb-4">
+                    <label className="block mb-2 font-bold">이미지</label>
+                    <img src={post.imageUrl} alt="게시글 이미지" className="w-full h-auto" />
+                </div>
+            )}
             <button
                 onClick={handleSave}
                 className="bg-black w-full text-white px-4 py-2 rounded"

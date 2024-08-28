@@ -16,11 +16,13 @@ interface Post {
 }
 
 interface Comment {
-    commentId: number;
+    id: number;
     content: string;
     reportCount: number;
-    parentId: number | null;
-    userName: string;
+    parent: number | null;
+    user: {
+        nickname: string;
+    };
 }
 
 interface WriteDetailPageProps {
@@ -51,7 +53,7 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
             });
             setPost(postResponse.data);
 
-            const commentsResponse = await axios.get(`/api/comments/${postId}`);
+            const commentsResponse = await axios.get(`/api/posts/${postId}/comments`);
             setLocalComments(commentsResponse.data);
         } catch (error) {
             console.error('게시물을 가져오는 데 실패했습니다', error);
@@ -63,11 +65,20 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
     }, [postId]);
 
     useEffect(() => {
+        console.log('Local comments updated:', localComments);
+    }, [localComments]);
+
+
+    useEffect(() => {
         // 서버에서 바이너리 프로필 이미지 로드하기
         const fetchProfileImage = async () => {
+            const token = localStorage.getItem('token');
             try {
                 const response = await axios.get('/api/users/profile-picture', {
-                    responseType: 'blob' // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    responseType: 'blob', // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // 인증 헤더 추가
+                    },
                 });
 
                 if (response.data) {
@@ -109,49 +120,86 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
         navigate('/board');
     };
 
+    const handleReportComment = async (commentId: number) => {
+        try {
+            await axios.post(`/api/comments/report/${commentId}`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+            alert('댓글이 신고되었습니다.');
+        } catch (error) {
+            console.error('댓글 신고 중 오류 발생:', error);
+            alert('댓글 신고 중 오류가 발생했습니다.');
+        }
+    };
+
     const handleAddComment = async () => {
         if (newComment.trim()) {
             try {
-                const commentRequest = { content: newComment, parentId: null };
-                const response = await axios.post(`/api/comments/${postId}`, commentRequest);
+                const response = await axios.post(`/api/comments/${post.id}`, {
+                    content: newComment
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    }
+                });
 
-                const newCommentObject: Comment = {
-                    commentId: response.data.commentId, // 서버에서 받은 commentId 사용
-                    content: response.data.content,     // 서버에서 받은 content 사용
-                    reportCount: response.data.reportCount || 0, // 서버에서 받은 reportCount 사용
-                    parentId: response.data.parentId,   // 서버에서 받은 parentId 사용
-                    userName: user.nickname,
-                };
-
-                setLocalComments(prevComments => [...prevComments, newCommentObject]);
-                setPost(prevPost => prevPost ? {
-                    ...prevPost,
-                    commentsCount: (prevPost.commentsCount || 0) + 1 }
-                    : prevPost);
+                // 댓글 추가 성공 시
+                setLocalComments(prevComments => [
+                    ...prevComments,
+                    {
+                        id: response.data,
+                        content: newComment,
+                        reportCount: 0,
+                        parent: null,
+                        user: { nickname: user.nickname } // 사용자 닉네임 설정
+                    }
+                ]);
                 setNewComment('');
+
+                // 게시물 정보를 다시 가져와 댓글 수를 업데이트
+                const postResponse = await axios.get(`/api/posts/${post.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                setPost(postResponse.data);
+
             } catch (error) {
-                console.error('댓글을 추가하는 데 실패했습니다', error);
+                console.error('댓글 추가 중 오류 발생:', error);
+                alert('댓글 추가 중 오류가 발생했습니다.');
             }
         }
     };
 
+
+
     const handleDeleteComment = async (commentId: number) => {
+        // UI에서 즉시 댓글 삭제
+        setLocalComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
+
         try {
-            const response = await axios.delete(`/api/comments/${commentId}`, {
+            // 댓글 삭제 요청
+            await axios.delete(`/api/comments/${commentId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },
             });
 
-            if (response.status === 200) {
-                setLocalComments(prevComments => prevComments.filter(comment => comment.commentId !== commentId));
-            } else {
-                console.error('댓글 삭제 요청 실패:', response.statusText);
-            }
+            alert('댓글이 삭제되었습니다.');
         } catch (error) {
-            console.error('댓글 삭제 중 에러 발생:', error);
+            // 오류가 발생했을 때, UI 상태를 원래대로 복원
+            setLocalComments(prevComments => [
+                ...prevComments,
+                // 삭제된 댓글을 다시 추가하거나, 서버에서 최신 댓글 목록을 가져올 수 있음
+            ]);
+
+            console.error('댓글 삭제 중 오류가 발생했습니다:', error);
+            alert('댓글 삭제 중 오류가 발생했습니다.');
         }
     };
+
 
     const handleEditComment = async () => {
         if (editingCommentContent.trim()) {
@@ -163,7 +211,7 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
                 });
 
                 setLocalComments(prevComments => prevComments.map(comment =>
-                    comment.commentId === editingCommentId ? { ...comment, content: editingCommentContent } : comment
+                    comment.id === editingCommentId ? { ...comment, content: editingCommentContent } : comment
                 ));
                 setEditingCommentId(null);
                 setEditingCommentContent('');
@@ -172,25 +220,6 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
             }
         }
     };
-
-    // const handleLike = async () => {
-    //     if (!post) return;
-    //
-    //     try {
-    //         const response = await axios.put(`/api/posts/${post.id}/like`);
-    //         const updatedLikes = response.data.likes;
-    //         setPost(prevPost => prevPost ? { ...prevPost, likes: updatedLikes } : prevPost);
-    //         updatePostLikes(post.id, updatedLikes);
-    //
-    //         const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
-    //         if (!likedPosts.some((savedPost: Post) => savedPost.id === post.id)) {
-    //             likedPosts.push(post);
-    //             localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
-    //         }
-    //     } catch (error) {
-    //         console.error('좋아요를 추가하는 데 실패했습니다', error);
-    //     }
-    // };
 
     const handleLike = async () => {
         if (!post || post.isLiked) return; // 이미 좋아요를 눌렀으면 더 이상 처리하지 않음
@@ -209,9 +238,6 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
             setPost(prevPost => prevPost ? { ...prevPost, likes: prevPost.likes - 1, isLiked: false } : prevPost); // 오류 발생 시 상태 롤백
         }
     };
-
-
-
 
 
     const handleToggleMenu = () => {
@@ -246,10 +272,28 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
                 // 다른 상태일 경우
                 alert('게시글 삭제에 실패했습니다.');
             }
-        } catch (err) {
+        } catch (error: any) {
             // 에러 처리
-            console.error('게시글 삭제에 실패했습니다.', err);
-            alert('게시글 삭제 중 오류가 발생했습니다.');
+            if (error.response) {
+                // 서버가 응답을 했고 상태 코드가 2xx가 아닌 경우
+                switch (error.response.status) {
+                    case 403:
+                        alert('게시글 삭제 권한이 없습니다.');
+                        break;
+                    case 404:
+                        alert('게시글을 찾을 수 없습니다.');
+                        break;
+                    case 500:
+                        alert('서버 오류가 발생했습니다.');
+                        break;
+                    default:
+                        alert('게시글 삭제 중 오류가 발생했습니다.');
+                }
+            } else {
+                // 서버가 응답하지 않았거나 네트워크 오류 발생
+                alert('네트워크 오류가 발생했습니다.');
+            }
+            console.error('게시글 삭제 중 오류 발생:', error);
         }
     };
 
@@ -275,7 +319,7 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
             </div>
             <hr className="w-full mt-2 mb-3"/>
             <div className="flex items-center w-full p-2 mt-3">
-                {profileImageUrl ? (
+            {profileImageUrl ? (
                     <img src={profileImageUrl} alt="Profile" className="w-16 h-16 rounded-full mr-4 object-cover"/>
                 ) : (
                     <FaRegUserCircle className="w-16 h-16 mr-4"/>
@@ -297,7 +341,7 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
             <div>
                 <h2 className="text-xl font-bold mb-2 mt-3">댓글</h2>
                 {localComments.map(comment => (
-                    <div key={comment.commentId} className="border-b p-2 flex mt-1 items-center justify-between">
+                    <div key={comment.id} className="border-b p-2 flex mt-1 items-center justify-between">
                         <div>
                             <div className="flex">
                                 {profileImageUrl ? (
@@ -307,8 +351,8 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
                                     <FaRegUserCircle className="w-10 h-10 mr-4"/>
                                 )}
                                 <div className="flex flex-col">
-                                    <p className="text-lg font-bold ml-2">{comment.userName}</p>
-                                    {editingCommentId === comment.commentId ? (
+                                    <p className="text-lg font-bold ml-2">{comment.user.nickname}</p>
+                                    {editingCommentId === comment.id ? (
                                         <div>
                                             <textarea
                                                 value={editingCommentContent}
@@ -330,21 +374,26 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
                         </div>
                         <div className="relative">
                             <MdMoreVert
-                                onClick={() => handleToggleCommentMenu(comment.commentId)}
+                                onClick={() => handleToggleCommentMenu(comment.id)}
                                 className="w-6 h-6 ml-4 cursor-pointer"
                             />
-                            {showCommentMenu[comment.commentId] && (
+                            {showCommentMenu[comment.id] && (
                                 <div className="absolute right-0 mt-2 w-24 bg-white border rounded shadow-lg z-50">
                                     <button onClick={() => {
-                                        setEditingCommentId(comment.commentId);
+                                        setEditingCommentId(comment.id);
                                         setEditingCommentContent(comment.content);
                                     }}
                                             className="block w-full px-4 py-2 text-center hover:bg-gray-200">
                                         수정
                                     </button>
-                                    <button onClick={() => handleDeleteComment(comment.commentId)}
+                                    <button
+                                            onClick={() => handleDeleteComment(comment.id)}
                                             className="block w-full px-4 py-2 text-center hover:bg-gray-200">
                                         삭제
+                                    </button>
+                                    <button onClick={() => handleReportComment(comment.id)}
+                                            className="block w-full px-4 py-2 text-center hover:bg-gray-200">
+                                        신고
                                     </button>
                                 </div>
                             )}
@@ -354,7 +403,7 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
             </div>
 
             <div className="mt-4">
-                <div className="mb-3 flex">
+            <div className="mb-3 flex">
                     <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
@@ -362,8 +411,8 @@ const WriteDetailPage: React.FC<WriteDetailPageProps> = ({ updatePostLikes, dele
                         className="w-full p-1 border rounded-lg mr-3 h-10"
                     />
                     <button
-                        onClick={handleAddComment}
                         className="text-black border border-black rounded-lg w-16 h-10"
+                        onClick={handleAddComment}
                     >
                         추가
                     </button>

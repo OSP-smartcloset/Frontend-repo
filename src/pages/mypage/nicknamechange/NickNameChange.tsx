@@ -33,8 +33,13 @@ function EditProfile() {
         setLoading(true);
 
         try {
+            const token = localStorage.getItem('token'); // 또는 다른 방법으로 토큰을 가져옵니다.
             const response = await axios.patch('/api/users/change/nickname', {
                 newNickname: nickname,
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
             });
 
             if (response.status === 200) {

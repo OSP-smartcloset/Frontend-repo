@@ -32,6 +32,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
                 const response = await axios.put('/api/users/profile-picture', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
+                        // 필요 시 인증 헤더 추가
+                        'Authorization': `Bearer ${localStorage.getItem('token')}` // 사용자 인증 토큰 추가
                     },
                 });
 

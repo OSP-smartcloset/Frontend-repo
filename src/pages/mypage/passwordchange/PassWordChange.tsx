@@ -20,9 +20,14 @@ function PasswordChange() {
         setLoading(true); // 로딩 상태 활성화
 
         try {
+            const token = localStorage.getItem('token');
             const response = await axios.patch('api/users/change/password', {
                 currentPassword,
                 newPassword,
+            },{
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
             });
 
             if (response.status === 200) {

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from "../../footer/Footer";
-// @ts-ignore
-import exam from "../../image/exam.png";
-import axios from "axios";
+import axios from 'axios';
 
 interface Post {
     id: number;
@@ -11,10 +9,9 @@ interface Post {
     content: string;
     likes: number;
     date: string;
-    imageUrl: string; // 필요한 경우 추가
+    imageUrl?: string; // 이미지가 선택적일 수 있음
     commentsCount: number;
 }
-
 
 const LikePage: React.FC = () => {
     const [likedPosts, setLikedPosts] = useState<Post[]>([]);
@@ -23,10 +20,19 @@ const LikePage: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchLikedPosts = () => {
-            const likedPostsData = JSON.parse(localStorage.getItem('likedPosts') || '[]') as Post[];
-            setLikedPosts(likedPostsData);
-            setLoading(false);
+        const fetchLikedPosts = async () => {
+            try {
+                const response = await axios.get('/api/posts/liked', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}` // 사용자 인증 토큰 추가
+                    }
+                });
+                setLikedPosts(response.data);
+                setLoading(false);
+            } catch (error) {
+                console.error('좋아요 한 게시물을 불러오는 중 오류가 발생했습니다.', error);
+                setLoading(false);
+            }
         };
 
         fetchLikedPosts();
@@ -35,9 +41,13 @@ const LikePage: React.FC = () => {
     useEffect(() => {
         // 서버에서 바이너리 프로필 이미지 로드하기
         const fetchProfileImage = async () => {
+            const token = localStorage.getItem('token');
             try {
                 const response = await axios.get('/api/users/profile-picture', {
-                    responseType: 'blob' // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    responseType: 'blob', // 바이너리 데이터를 받아오기 위해 'blob' 타입 지정
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // 인증 헤더 추가
+                    },
                 });
 
                 if (response.data) {
@@ -53,7 +63,6 @@ const LikePage: React.FC = () => {
         fetchProfileImage();
     }, []);
 
-
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -68,17 +77,17 @@ const LikePage: React.FC = () => {
             <main className="container mx-auto p-4">
                 {likedPosts.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {likedPosts.map((post, index) => (
-                            <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
+                        {likedPosts.map((post) => (
+                            <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
                                  onClick={() => navigate(`/post/${post.id}`)}>
                                 {post.imageUrl &&
                                     <img src={post.imageUrl} alt={post.title} className="w-full h-48 object-cover"/>}
                                 <div className="p-4">
                                     <div className="flex">
                                         {profileImageUrl && (
-                                            <img src={profileImageUrl} alt={post.title} className="w-10 h-10 rounded-full" />
+                                            <img src={profileImageUrl} alt="Profile" className="w-10 h-10 rounded-full" />
                                         )}
-                                        <h3 className="text-xl font-bold ml-3 ">{post.id}</h3>
+                                        <h3 className="text-xl font-bold ml-3">{post.id}</h3>
                                     </div>
                                     <h3 className="text-xl font-bold mt-2">{post.title}</h3>
                                     <p className="text-gray-600 mt-2 ml-1">{post.content}</p>
